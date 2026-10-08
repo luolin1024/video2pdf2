@@ -36,6 +36,10 @@ def _open_in_explorer(path: Path):
         subprocess.Popen(["xdg-open", str(path)])
 
 
+# 由打包入口注入：拖拽/带参启动时预载的文件列表
+PRELOAD_FILES: list[Path] = []
+
+
 class App:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -49,6 +53,8 @@ class App:
         self.last_outdir: Path | None = None
 
         self._build_files_area()
+        for p in PRELOAD_FILES:
+            self._append_unique(p)
         self._build_options_area()
         self._build_llm_area()
         self._build_run_area()
