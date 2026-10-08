@@ -52,7 +52,13 @@ def main():
     if args:
         import v2p2.gui as gui
 
-        gui.PRELOAD_FILES = [Path(a).expanduser().resolve() for a in args]
+        # 只预载真实存在的视频文件（防御 LaunchServices/argv 传参噪声）
+        gui.PRELOAD_FILES = [
+            p for a in args
+            for p in [Path(a).expanduser()]
+            if p.suffix.lower() in gui.VIDEO_EXTS and p.is_file()
+        ]
+
     from v2p2.gui import main as gui_main
 
     gui_main()
