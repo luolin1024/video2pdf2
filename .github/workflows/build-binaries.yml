@@ -81,6 +81,19 @@ jobs:
           cd dist
           tar czf ${{ matrix.artifact }}.tar.gz v2p2
 
+      - name: Create dmg
+        if: runner.os == 'macOS'
+        run: |
+          hdiutil create -volname v2p2 -srcfolder dist/v2p2.app -ov -format UDZO dist/${{ matrix.artifact }}.dmg
+
+      - name: Build installer (Inno Setup)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          VERSION=$("${{ matrix.py }}" -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "AppVersion=$VERSION"
+          MSYS_NO_PATHCONV=1 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" /DAppVersion="$VERSION" packaging/v2p2.iss
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -88,6 +101,8 @@ jobs:
           path: |
             dist/*.zip
             dist/*.tar.gz
+            dist/*.exe
+            dist/*.dmg
           if-no-files-found: error
 
   release:
