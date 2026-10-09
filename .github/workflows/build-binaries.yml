@@ -43,11 +43,12 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.13"
+
       - name: Install dependencies
         shell: bash
         run: |
           unset VIRTUAL_ENV
-          uv venv .venv --python 3.13
+          uv venv .venv --python 3.13 --allow-existing
           uv pip install -e . pyinstaller --python "${{ matrix.py }}"
 
       - name: Materialize whisper-small model
