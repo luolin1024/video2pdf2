@@ -39,12 +39,12 @@ v2p2 视频.mp4                       # 全流程：转写+抽帧+对齐+分析+
 v2p2 视频.mp4 --language zh --summary-lang zh-en
 v2p2 视频.mp4 --reuse-srt 已有.srt   # 已有字幕时跳过转写
 v2p2 视频.mp4 --scene-threshold 0.15 --min-gap 5   # 画面变化快的视频调大阈值
-v2p2 目录/                          # 批量：展开目录内全部视频
+v2p2 目录/                          # 批量：递归展开目录（含子目录）内全部视频
 v2p2 视频.mp4 --zh-script traditional --no-correct
 ```
 
 ```bash
-# 打 v* 标签或到 Actions 页手动触发，自动产出 4 平台可执行程序 artifacts：
+# 打 v* 标签、或直接 push 到 main、或到 Actions 页手动触发，自动产出 4 平台可执行程序 artifacts：
 git tag v0.1.1 && git push origin v0.1.1
 ```
 
@@ -73,7 +73,7 @@ pyinstaller -F -n v2p2 \
 
 ## 路线图
 
-- [ ] GUI 模式（PySide6/Flet，复用 `v2p2/pipeline.run`）
+- [x] GUI 模式（tkinter，零额外依赖，复用 `v2p2/pipeline.run_batch`，`v2p2-gui` 启动）
+- [x] 批量/整个课程目录处理（递归展开子目录）
 - [ ] 更多语种语言包
-- [ ] 批量/整个课程目录处理
 - [ ] 向量检索（沿用 Video2PDF TODO 思路）

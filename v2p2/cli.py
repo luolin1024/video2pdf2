@@ -12,11 +12,14 @@ VIDEO_EXTS = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".flv", ".ts"}
 
 
 def expand_videos(paths: list[Path]) -> list[Path]:
-    """目录 → 展开其中全部视频文件；文件原样保留。"""
+    """目录 → 递归展开其中全部视频文件（含子目录）；文件原样保留。"""
     out: list[Path] = []
     for p in paths:
         if p.is_dir():
-            out += sorted(x for x in p.iterdir() if x.suffix.lower() in VIDEO_EXTS)
+            out += sorted(
+                x for x in p.rglob("*")
+                if x.is_file() and x.suffix.lower() in VIDEO_EXTS
+            )
         else:
             out.append(p)
     return out
