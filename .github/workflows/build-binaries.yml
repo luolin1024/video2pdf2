@@ -20,11 +20,6 @@ jobs:
             sep: ":"
             py: .venv/bin/python
             archive: zip
-          - os: macos-13
-            artifact: v2p2-macos-x64
-            sep: ":"
-            py: .venv/bin/python
-            archive: zip
           - os: windows-latest
             artifact: v2p2-windows-x64
             sep: ";"

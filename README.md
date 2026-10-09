@@ -11,7 +11,7 @@ mp4 → **关键帧 PDF + 关键字幕 + LLM 分析总结**。场景检测抽帧
 - **LLM 字幕校对**：自动修正 ASR 同音字/误听（"主江老师"→"主讲老师"），`--no-correct` 关闭；未配置 LLM 时自动跳过
 - **可检索 PDF**：reportlab 生成，帧为图、字幕/总结为真实文本层；CJK 字体解析链（系统字体→CID 兜底），三平台不缺字
 - **LLM 可插拔**：任何 OpenAI 兼容 `/chat/completions` 端点（GLM / DeepSeek / SiliconFlow / OpenAI / 本地网关）
-- **CI 多平台打包**：GitHub Actions 矩阵构建 macOS(arm64/x64)/Windows/Linux 可执行程序（含模型与 ffmpeg，下载即用）
+- **CI 多平台打包**：GitHub Actions 矩阵构建 macOS(arm64)/Windows/Linux 可执行程序（含模型与 ffmpeg，下载即用）；Intel Mac 需自行 `pip install -e .`
 
 ## 安装
 
