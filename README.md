@@ -76,4 +76,3 @@ pyinstaller -F -n v2p2 \
 - [x] GUI 模式（tkinter，零额外依赖，复用 `v2p2/pipeline.run_batch`，`v2p2-gui` 启动）
 - [x] 批量/整个课程目录处理（递归展开子目录）
 - [ ] 更多语种语言包
-- [ ] 向量检索（沿用 Video2PDF TODO 思路）
