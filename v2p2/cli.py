@@ -40,6 +40,10 @@ def build_parser() -> argparse.ArgumentParser:
                    help="语音语言：auto/zh/en/…（whisper 支持 90+ 语种，默认 auto）")
     p.add_argument("--summary-lang", default=None,
                    help="分析与 PDF 输出语言：zh / zh-en / en（默认 zh）")
+    p.add_argument("--zh-script", choices=["auto", "simplified", "traditional"], default=None,
+                   help="中文字幕简繁：auto=按系统 locale（默认）")
+    p.add_argument("--no-correct", dest="auto_correct", action="store_false", default=None,
+                   help="关闭 LLM 字幕校对（默认开启，需已配置 LLM）")
     p.add_argument("--reuse-srt", type=Path, default=None, help="复用已有 SRT，跳过转写")
     p.add_argument("--skip-analysis", action="store_true", help="跳过 LLM 分析")
     p.add_argument("--skip-pdf", action="store_true", help="跳过 PDF 生成")
@@ -65,6 +69,7 @@ def main(argv=None) -> int:
             scene_threshold=args.scene_threshold, min_gap=args.min_gap,
             asr_backend=args.asr_backend, asr_model=args.asr_model,
             language=args.language, summary_lang=args.summary_lang,
+            zh_script=args.zh_script, auto_correct=args.auto_correct,
             reuse_srt=args.reuse_srt, skip_analysis=args.skip_analysis,
             skip_pdf=args.skip_pdf, api_base=args.api_base,
             api_key=args.api_key, llm_model=args.llm_model, keep_wav=args.keep_wav,
@@ -83,7 +88,7 @@ def main(argv=None) -> int:
         print(f"   字幕 : {r.srt or '-'}")
         print(f"   对照 : {r.aligned_path or '-'}")
         print(f"   总结 : {r.summary_path or '-'}")
-    return 0 if all(isinstance(r, type(None)) or not isinstance(r, Exception) for r in results) else 2
+    return 0 if all(not isinstance(r, Exception) for r in results) else 2
 
 
 if __name__ == "__main__":

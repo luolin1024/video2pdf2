@@ -1,0 +1,94 @@
+name: build-binaries
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            artifact: v2p2-macos-arm64
+            sep: ":"
+            py: .venv/bin/python
+            archive: zip
+          - os: macos-13
+            artifact: v2p2-macos-x64
+            sep: ":"
+            py: .venv/bin/python
+            archive: zip
+          - os: windows-latest
+            artifact: v2p2-windows-x64
+            sep: ";"
+            py: .venv/Scripts/python.exe
+            archive: zip
+          - os: ubuntu-22.04
+            artifact: v2p2-linux-x64
+            sep: ":"
+            py: .venv/bin/python
+            archive: tar
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          uv venv .venv --python 3.13
+          uv pip install -e . pyinstaller --python "${{ matrix.py }}"
+
+      - name: Materialize whisper-small model
+        shell: bash
+        run: |
+          uv pip install huggingface_hub --python "${{ matrix.py }}"
+          "${{ matrix.py }}" -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-small', local_dir='build/model')"
+
+      - name: Build with PyInstaller
+        shell: bash
+        run: >
+          "${{ matrix.py }}" -m PyInstaller --noconfirm --windowed --name v2p2
+          --collect-all faster_whisper --collect-all ctranslate2
+          --collect-all imageio_ffmpeg --collect-all onnxruntime
+          --collect-all tokenizers --collect-all av
+          --add-data "build/model${{ matrix.sep }}models/faster-whisper-small"
+          run_gui.py
+
+      - name: Archive (zip)
+        if: matrix.archive == 'zip'
+        shell: bash
+        run: |
+          cd dist
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            powershell -Command "Compress-Archive -Path v2p2 -DestinationPath ${{ matrix.artifact }}.zip -Force"
+          else
+            find . -maxdepth 1 \( -name "v2p2.app" -o -name "v2p2" \) | xargs zip -qry ${{ matrix.artifact }}.zip
+          fi
+
+      - name: Archive (tar.gz)
+        if: matrix.archive == 'tar'
+        shell: bash
+        run: |
+          cd dist
+          tar czf ${{ matrix.artifact }}.tar.gz v2p2
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/*.zip
+            dist/*.tar.gz
+          if-no-files-found: error

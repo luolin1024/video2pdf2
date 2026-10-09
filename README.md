@@ -7,8 +7,11 @@ mp4 → **关键帧 PDF + 关键字幕 + LLM 分析总结**。场景检测抽帧
 - **跨平台**：Windows / macOS / Linux；无系统 ffmpeg 时自动回退 `imageio-ffmpeg` 自带静态二进制（可打进可执行程序）
 - **本地 ASR**：faster-whisper（默认，CPU int8，全平台）；macOS 可选 mlx-whisper 加速
 - **中英双语**（v1）：语音语言 `--language auto|zh|en|…`（whisper 支持 90+ 语种），输出语言 `--summary-lang zh|zh-en|en`；新增语种只需在 `v2p2/config.py` 的 `LANG_PACK` 加条目
+- **简繁规范**：`--zh-script auto|simplified|traditional`（OpenCC 确定性转换；auto 按系统 locale 判定，zh_TW/zh_HK → 繁体）
+- **LLM 字幕校对**：自动修正 ASR 同音字/误听（"主江老师"→"主讲老师"），`--no-correct` 关闭；未配置 LLM 时自动跳过
 - **可检索 PDF**：reportlab 生成，帧为图、字幕/总结为真实文本层；CJK 字体解析链（系统字体→CID 兜底），三平台不缺字
 - **LLM 可插拔**：任何 OpenAI 兼容 `/chat/completions` 端点（GLM / DeepSeek / SiliconFlow / OpenAI / 本地网关）
+- **CI 多平台打包**：GitHub Actions 矩阵构建 macOS(arm64/x64)/Windows/Linux 可执行程序（含模型与 ffmpeg，下载即用）
 
 ## 安装
 
@@ -36,6 +39,13 @@ v2p2 视频.mp4                       # 全流程：转写+抽帧+对齐+分析+
 v2p2 视频.mp4 --language zh --summary-lang zh-en
 v2p2 视频.mp4 --reuse-srt 已有.srt   # 已有字幕时跳过转写
 v2p2 视频.mp4 --scene-threshold 0.15 --min-gap 5   # 画面变化快的视频调大阈值
+v2p2 目录/                          # 批量：展开目录内全部视频
+v2p2 视频.mp4 --zh-script traditional --no-correct
+```
+
+```bash
+# 打 v* 标签或到 Actions 页手动触发，自动产出 4 平台可执行程序 artifacts：
+git tag v0.1.1 && git push origin v0.1.1
 ```
 
 输出（默认 `<视频名>_v2p2/`）：

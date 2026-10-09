@@ -1,6 +1,7 @@
 """核心流水线：Options → run()/run_batch() → Result。
 
 CLI 与 GUI 都是薄壳，共用本模块；选项解析顺序：显式传入 > 配置文件 > 内置默认。
+处理链：ASR → LLM 字幕校对（可选）→ 简繁规范（OpenCC）→ 关键帧 → 对齐 → LLM 总结（可选）→ PDF。
 """
 from __future__ import annotations
 
@@ -9,7 +10,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import align, analyze, asr, keyframes, pdf
+from . import align, analyze, asr, correct, keyframes, pdf, textproc
 from .config import lang_pack, load_config_file, load_llm_config
 
 
@@ -22,6 +23,8 @@ class Options:
     asr_backend: str | None = None        # None → 配置文件 → faster-whisper
     asr_model: str | None = None          # None → 配置文件 → small
     language: str | None = None           # None → 配置文件 → auto
+    zh_script: str | None = None          # None → 配置文件 → auto（按系统 locale）
+    auto_correct: bool | None = None      # None → 配置文件 → True（LLM 字幕校对）
     reuse_srt: Path | None = None
     summary_lang: str | None = None       # None → 配置文件 → zh
     skip_analysis: bool = False
@@ -38,6 +41,8 @@ _FILE_OPTION_DEFAULTS = {
     "asr_backend": "faster-whisper",
     "asr_model": "small",
     "language": "auto",
+    "zh_script": "auto",
+    "auto_correct": True,
     "summary_lang": "zh",
 }
 
@@ -45,11 +50,11 @@ _FILE_OPTION_DEFAULTS = {
 def resolve_options(opt: Options) -> Options:
     """None 字段回退：配置文件 [options] → 内置默认（显式传入值优先）。"""
     file_cfg = load_config_file().get("options", {})
-    updates = {
-        k: file_cfg.get(k, d)
-        for k, d in _FILE_OPTION_DEFAULTS.items()
-        if getattr(opt, k) is None
-    }
+    updates = {}
+    for k, d in _FILE_OPTION_DEFAULTS.items():
+        val = getattr(opt, k)
+        if val is None:
+            updates[k] = file_cfg.get(k, d)
     return dataclasses.replace(opt, **updates)
 
 
@@ -76,7 +81,11 @@ def run(opt: Options, log=print) -> Result:
     outdir.mkdir(parents=True, exist_ok=True)
     pack = lang_pack(opt.summary_lang)
 
-    # 1) 字幕（转写或复用）
+    cfg = None
+    if not opt.skip_analysis:
+        cfg = load_llm_config(opt.api_base, opt.api_key, opt.llm_model)
+
+    # 1) 字幕（转写或复用）→ LLM 校对（可选）→ 简繁规范
     srt_path = outdir / f"{video.stem}.srt"
     wav = outdir / "audio.wav"
     if opt.reuse_srt:
@@ -87,8 +96,19 @@ def run(opt: Options, log=print) -> Result:
         asr.extract_audio(video, wav)
         lang = None if opt.language in ("auto", "") else opt.language
         segments = asr.transcribe(wav, opt.asr_model, opt.asr_backend, lang)
-        asr.write_srt(segments, srt_path)
-        log(f"      {len(segments)} 条字幕 → {srt_path.name}")
+        log(f"      {len(segments)} 条原始字幕")
+    if opt.auto_correct and cfg is not None and segments and opt.language == "zh":
+        log("      LLM 字幕校对（同音字/误听修正）…")
+        try:
+            fixed = correct.correct_transcript(segments, cfg)
+            log(f"      修正 {fixed} 条")
+        except Exception as exc:
+            log(f"      校对失败，保留原文：{exc}")
+    script = textproc.resolve_zh_script(opt.zh_script)
+    for s in segments:
+        s["text"] = textproc.convert(s["text"], script)
+    asr.write_srt(segments, srt_path)
+    log(f"      {len(segments)} 条字幕（{script}）→ {srt_path.name}")
     duration = asr.wav_duration(wav) if wav.exists() else keyframes.parse_duration_ffmpeg(video)
 
     # 2) 关键帧
@@ -107,13 +127,13 @@ def run(opt: Options, log=print) -> Result:
     summary_md = None
     if opt.skip_analysis:
         log("[4/5] 已指定跳过分析")
+    elif cfg is None:
+        log("[4/5] 未配置 LLM 端点（配置文件/环境变量 V2P2_*），跳过分析")
     else:
-        cfg = load_llm_config(opt.api_base, opt.api_key, opt.llm_model)
-        if cfg is None:
-            log("[4/5] 未配置 LLM 端点（配置文件/环境变量 V2P2_*），跳过分析")
-        else:
-            log(f"[4/5] LLM 分析（{cfg.model}，{len(frames)} 帧）…")
-            summary_md = analyze.summarize(video.stem, duration, aligned, frames, cfg, pack)
+        log(f"[4/5] LLM 分析（{cfg.model}，{len(frames)} 帧）…")
+        summary_md = analyze.summarize(video.stem, duration, aligned, frames, cfg, pack)
+        if summary_md and opt.summary_lang.startswith("zh"):
+            summary_md = textproc.convert(summary_md, script)
     summary_path = None
     if summary_md:
         summary_path = outdir / f"{video.stem}.summary.md"

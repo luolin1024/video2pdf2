@@ -93,6 +93,12 @@ class App:
         ttk.Label(row, text="最小间隔s").pack(side="left")
         self.min_gap = ttk.Entry(row, width=5); self.min_gap.insert(0, "2.0")
         self.min_gap.pack(side="left", padx=2)
+        ttk.Label(row, text="简繁").pack(side="left")
+        self.zh_script = ttk.Combobox(row, values=["auto", "simplified", "traditional"],
+                                      width=11, state="readonly")
+        self.zh_script.set("auto"); self.zh_script.pack(side="left", padx=(2, 10))
+        self.auto_correct = tk.BooleanVar(value=True)
+        ttk.Checkbutton(row, text="LLM字幕校对", variable=self.auto_correct).pack(side="left")
 
     def _build_llm_area(self):
         box = ttk.LabelFrame(self.root, text=" 3. AI 分析（OpenAI 兼容端点，留空则跳过分析） ")
@@ -142,6 +148,10 @@ class App:
             self.summary_lang.set(opts["summary_lang"])
         if opts.get("asr_model"):
             self.asr_model.set(opts["asr_model"])
+        if opts.get("zh_script"):
+            self.zh_script.set(opts["zh_script"])
+        if opts.get("auto_correct") is not None:
+            self.auto_correct.set(bool(opts["auto_correct"]))
 
     def save_settings(self):
         try:
@@ -149,6 +159,8 @@ class App:
                 "language": self.voice_lang.get(),
                 "summary_lang": self.summary_lang.get(),
                 "asr_model": self.asr_model.get(),
+                "zh_script": self.zh_script.get(),
+                "auto_correct": bool(self.auto_correct.get()),
                 "scene_threshold": float(self.scene_thr.get() or 0.08),
                 "min_gap": float(self.min_gap.get() or 2.0),
             }
@@ -209,6 +221,7 @@ class App:
             video=videos[0],
             scene_threshold=thr, min_gap=gap,
             language=self.voice_lang.get(), summary_lang=self.summary_lang.get(),
+            zh_script=self.zh_script.get(), auto_correct=bool(self.auto_correct.get()),
             asr_model=self.asr_model.get() or None,
             skip_analysis=not analysis,
             api_base=self.api_base.get().strip() or None,
