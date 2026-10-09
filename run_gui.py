@@ -1,8 +1,8 @@
 """PyInstaller 打包入口。
 
-- `v2p2 --cli <视频...>`：headless 命令行批量模式；
-- `v2p2 <视频...>`：打开 GUI 并预载文件列表（支持拖拽到应用图标）；
-- `v2p2`：打开空 GUI。
+- `chalkpress --cli <视频...>`：headless 命令行批量模式；
+- `chalkpress <视频...>`：打开 GUI 并预载文件列表（支持拖拽到应用图标）；
+- `chalkpress`：打开空 GUI。
 """
 import os
 import sys
@@ -46,11 +46,11 @@ def main():
     _preempt_tqdm_mp_lock()
     args = sys.argv[1:]
     if "--cli" in args:
-        from v2p2.cli import main as cli_main
+        from chalkpress.cli import main as cli_main
 
         _frozen_cli_exit(cli_main([a for a in args if a != "--cli"]))
     if args:
-        import v2p2.gui as gui
+        import chalkpress.gui as gui
 
         # 只预载真实存在的视频文件（防御 LaunchServices/argv 传参噪声）
         gui.PRELOAD_FILES = [
@@ -59,7 +59,7 @@ def main():
             if p.suffix.lower() in gui.VIDEO_EXTS and p.is_file()
         ]
 
-    from v2p2.gui import main as gui_main
+    from chalkpress.gui import main as gui_main
 
     gui_main()
 

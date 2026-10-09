@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "video2pdf2"
-version = "0.1.0"
-description = "mp4 → 关键帧 PDF + 关键字幕 + LLM 分析总结（跨平台 CLI；GUI 与打包可执行程序在路线图）"
+name = "chalkpress"
+version = "0.2.0"
+description = "Chalkpress：讲座视频 → 讲义 PDF（关键帧 + 字幕 + AI 总结），跨平台 CLI 与 GUI"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -21,8 +21,8 @@ dependencies = [
 mac = ["mlx-whisper>=0.5"]
 
 [project.scripts]
-v2p2 = "v2p2.cli:main"
-v2p2-gui = "v2p2.gui:main"
+chalkpress = "chalkpress.cli:main"
+chalkpress-gui = "chalkpress.gui:main"
 
 [tool.setuptools]
-packages = ["v2p2"]
+packages = ["chalkpress"]

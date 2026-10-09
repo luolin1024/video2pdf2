@@ -16,17 +16,17 @@ jobs:
       matrix:
         include:
           - os: macos-15
-            artifact: v2p2-macos-arm64
+            artifact: chalkpress-macos-arm64
             sep: ":"
             py: .venv/bin/python
             archive: zip
           - os: windows-latest
-            artifact: v2p2-windows-x64
+            artifact: chalkpress-windows-x64
             sep: ";"
             py: .venv/Scripts/python.exe
             archive: zip
           - os: ubuntu-22.04
-            artifact: v2p2-linux-x64
+            artifact: chalkpress-linux-x64
             sep: ":"
             py: .venv/bin/python
             archive: tar
@@ -56,7 +56,7 @@ jobs:
       - name: Build with PyInstaller
         shell: bash
         run: >
-          "${{ matrix.py }}" -m PyInstaller --noconfirm --windowed --name v2p2
+          "${{ matrix.py }}" -m PyInstaller --noconfirm --windowed --name chalkpress
           --collect-all faster_whisper --collect-all ctranslate2
           --collect-all imageio_ffmpeg --collect-all onnxruntime
           --collect-all tokenizers --collect-all av
@@ -69,9 +69,9 @@ jobs:
         run: |
           cd dist
           if [ "$RUNNER_OS" = "Windows" ]; then
-            powershell -Command "Compress-Archive -Path v2p2 -DestinationPath ${{ matrix.artifact }}.zip -Force"
+            powershell -Command "Compress-Archive -Path chalkpress -DestinationPath ${{ matrix.artifact }}.zip -Force"
           else
-            find . -maxdepth 1 \( -name "v2p2.app" -o -name "v2p2" \) | xargs zip -qry ${{ matrix.artifact }}.zip
+            find . -maxdepth 1 \( -name "chalkpress.app" -o -name "chalkpress" \) | xargs zip -qry ${{ matrix.artifact }}.zip
           fi
 
       - name: Archive (tar.gz)
@@ -79,12 +79,12 @@ jobs:
         shell: bash
         run: |
           cd dist
-          tar czf ${{ matrix.artifact }}.tar.gz v2p2
+          tar czf ${{ matrix.artifact }}.tar.gz chalkpress
 
       - name: Create dmg
         if: runner.os == 'macOS'
         run: |
-          hdiutil create -volname v2p2 -srcfolder dist/v2p2.app -ov -format UDZO dist/${{ matrix.artifact }}.dmg
+          hdiutil create -volname chalkpress -srcfolder dist/chalkpress.app -ov -format UDZO dist/${{ matrix.artifact }}.dmg
 
       - name: Build installer (Inno Setup)
         if: runner.os == 'Windows'
@@ -92,7 +92,7 @@ jobs:
         run: |
           VERSION=$("${{ matrix.py }}" -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "AppVersion=$VERSION"
-          MSYS_NO_PATHCONV=1 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" /DAppVersion="$VERSION" packaging/v2p2.iss
+          MSYS_NO_PATHCONV=1 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" /DAppVersion="$VERSION" packaging/chalkpress.iss
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

@@ -38,7 +38,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='v2p2',
+    name='chalkpress',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -57,11 +57,11 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='v2p2',
+    name='chalkpress',
 )
 app = BUNDLE(
     coll,
-    name='v2p2.app',
+    name='chalkpress.app',
     icon=None,
     bundle_identifier=None,
 )

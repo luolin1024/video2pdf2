@@ -1,4 +1,4 @@
-"""命令行入口。不带参数或想图形界面请用 v2p2-gui（同 core 流水线）。"""
+"""命令行入口。不带参数或想用图形界面请用 chalkpress-gui（同一核心流水线）。"""
 from __future__ import annotations
 
 import argparse
@@ -27,11 +27,11 @@ def expand_videos(paths: list[Path]) -> list[Path]:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="v2p2", description="mp4（批量）→ 关键帧 PDF + 关键字幕 + LLM 分析总结")
+        prog="chalkpress", description="讲座视频 → 讲义 PDF：关键帧 + 关键字幕 + AI 总结")
     p.add_argument("video", type=Path, nargs="+",
                    help="输入视频或目录（目录会展开其中全部视频），可传多个")
     p.add_argument("-o", "--outdir", type=Path, default=None,
-                   help="输出目录（默认逐视频 <视频名>_v2p2/；批量时为 <outdir>/<视频名>/）")
+                   help="输出目录（默认逐视频 <视频名>_讲义/；批量时为 <outdir>/<视频名>/）")
     p.add_argument("--scene-threshold", type=float, default=None,
                    help="场景切换阈值，越小越敏感（默认 0.08）")
     p.add_argument("--min-gap", type=float, default=None, help="关键帧最小间隔秒（默认 2.0）")
@@ -51,11 +51,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--skip-analysis", action="store_true", help="跳过 LLM 分析")
     p.add_argument("--skip-pdf", action="store_true", help="跳过 PDF 生成")
     p.add_argument("--api-base", default=None,
-                   help="OpenAI 兼容 API 地址（优先级：参数 > 环境变量 V2P2_API_BASE > 配置文件）")
-    p.add_argument("--api-key", default=None, help="API Key（默认环境变量 V2P2_API_KEY）")
-    p.add_argument("--llm-model", default=None, help="视觉模型名（默认环境变量 V2P2_LLM_MODEL）")
+                   help="OpenAI 兼容 API 地址（优先级：参数 > 环境变量 CHALKPRESS_API_BASE > 配置文件）")
+    p.add_argument("--api-key", default=None, help="API Key（默认环境变量 CHALKPRESS_API_KEY）")
+    p.add_argument("--llm-model", default=None, help="视觉模型名（默认环境变量 CHALKPRESS_LLM_MODEL）")
     p.add_argument("--keep-wav", action="store_true", help="保留中间 wav 文件")
-    p.add_argument("--version", action="version", version=f"v2p2 {__version__}")
+    p.add_argument("--version", action="version", version=f"chalkpress {__version__}")
     return p
 
 

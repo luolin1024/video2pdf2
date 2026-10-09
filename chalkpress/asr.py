@@ -37,7 +37,7 @@ def wav_duration(wav: Path) -> float:
 
 
 def transcribe(wav: Path, model_size="small", backend="faster-whisper", language=None):
-    """返回 [{start, end, text}]；language=None 时由 whisper 自动检测。"""
+    """返回 ([{start, end, text}], detected_lang)；language=None 时由 whisper 自动检测。"""
     if backend == "mlx-whisper":
         if sys.platform != "darwin":
             raise RuntimeError("mlx-whisper 后端仅支持 macOS")
@@ -79,12 +79,13 @@ def _faster(wav: Path, model_size: str, language):
         if language == "zh":
             # 引导 whisper 输出简体中文并贴近领域词汇
             kwargs["initial_prompt"] = "以下是普通话简体中文的课程讲解，涉及计算机、软件考试术语。"
-    segments, _info = model.transcribe(audio, **kwargs)
-    return [
+    segments, info = model.transcribe(audio, **kwargs)
+    out = [
         {"start": s.start, "end": s.end, "text": s.text.strip()}
         for s in segments
         if s.text.strip()
     ]
+    return out, getattr(info, "language", None)
 
 
 def _mlx(wav: Path, model_size: str, language):
@@ -95,11 +96,12 @@ def _mlx(wav: Path, model_size: str, language):
     if language:
         kwargs["language"] = language
     result = mlx_whisper.transcribe(str(wav), **kwargs)
-    return [
+    out = [
         {"start": s["start"], "end": s["end"], "text": s["text"].strip()}
         for s in result.get("segments", [])
         if s.get("text", "").strip()
     ]
+    return out, result.get("language")
 
 
 def _ensure_hf_reachable():

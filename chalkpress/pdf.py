@@ -1,6 +1,6 @@
 """关键帧 + 字幕 + 总结 → 可检索 PDF（reportlab，A4 横版）。
 
-跨平台字体解析链：V2P2_FONT → 项目 fonts/ → 平台系统 CJK 字体 → reportlab CID 兜底，
+跨平台字体解析链：CHALKPRESS_FONT（兼容旧 V2P2_FONT）→ 项目 fonts/ → 平台系统 CJK 字体 → reportlab CID 兜底，
 保证 Windows/macOS/Linux 中文渲染不缺字。
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ _FONT_CANDIDATES = {
 
 def register_cjk_font() -> str:
     candidates: list[Path] = []
-    env_font = os.getenv("V2P2_FONT")
+    env_font = os.getenv("CHALKPRESS_FONT") or os.getenv("V2P2_FONT")
     if env_font:
         candidates.append(Path(env_font))
     bundled = Path(__file__).resolve().parent / "fonts"
@@ -54,10 +54,10 @@ def register_cjk_font() -> str:
             if not c.is_file():
                 continue
             if c.suffix.lower() == ".ttc":
-                pdfmetrics.registerFont(TTFont("V2P2CJK", str(c), subfontIndex=0))
+                pdfmetrics.registerFont(TTFont("ChalkpressCJK", str(c), subfontIndex=0))
             else:
-                pdfmetrics.registerFont(TTFont("V2P2CJK", str(c)))
-            return "V2P2CJK"
+                pdfmetrics.registerFont(TTFont("ChalkpressCJK", str(c)))
+            return "ChalkpressCJK"
         except Exception:
             continue
     pdfmetrics.registerFont(UnicodeCIDFont("STSong-Light"))
