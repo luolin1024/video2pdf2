@@ -36,20 +36,26 @@ def fetch_latest(timeout: float = 10.0) -> dict | None:
         headers={"Accept": "application/vnd.github+json"},
     )
     r.raise_for_status()
+    fallback = None
     for rel in r.json():
         if rel.get("draft"):
             continue
-        assets = [
-            {"name": a["name"], "url": a["browser_download_url"], "size": a["size"]}
-            for a in rel.get("assets", [])
-        ]
-        return {
-            "version": (rel.get("tag_name") or "").lstrip("vV"),
+        tag = (rel.get("tag_name") or "").lstrip("vV")
+        entry = {
+            "version": tag,
             "prerelease": bool(rel.get("prerelease")),
-            "assets": assets,
+            "assets": [
+                {"name": a["name"], "url": a["browser_download_url"], "size": a["size"]}
+                for a in rel.get("assets", [])
+            ],
             "html_url": rel.get("html_url", f"https://github.com/{REPO}/releases"),
         }
-    return None
+        if fallback is None:
+            fallback = entry
+        # 滚动 latest 的 tag 无版本号、parse 出来恒为 0；跳过它取最新的 v* tag
+        if re.fullmatch(r"\d+(\.\d+)*", tag):
+            return entry
+    return fallback
 
 
 def pick_asset(assets: list[dict]) -> dict | None:
