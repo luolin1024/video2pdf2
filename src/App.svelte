@@ -5,6 +5,7 @@
   import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { request, startCore, onEvent, onCoreExit } from "./lib/ipc";
   import { app, resetRun, STAGES, computePct } from "./lib/state.svelte";
+  import { autoUpdate } from "./lib/updater";
   import RunPanel from "./components/RunPanel.svelte";
   import ResultsCard from "./components/ResultsCard.svelte";
   import SettingsSheet from "./components/SettingsSheet.svelte";
@@ -48,6 +49,7 @@
 
   onMount(() => {
     let unDrag: (() => void) | null = null;
+    autoUpdate().then((v) => v && alert(`已更新到 v${v}，重启后生效`));
     (async () => {
       try { await startCore(); } catch { coreDown = true; }
       const VIDEO_EXTS = /\.(mp4|mov|mkv|webm|avi|m4v|flv|ts)$/i;

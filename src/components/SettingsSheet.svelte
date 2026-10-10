@@ -77,7 +77,7 @@
     <button class="ghost" onclick={() => openPath(s.logs_dir)}>打开日志文件夹</button>
 
     <h3>关于</h3>
-    <p class="about">Chalkpress · 讲座视频 → 讲义 PDF<br />AGPL-3.0 开源 · 商用请联系作者</p>
+    <p class="about">Chalkpress · 讲座视频 → 讲义 PDF<br />AGPL-3.0 开源 · 商用请联系作者<br />当前版本见窗口标题；更新自动进行</p>
   </aside>
 {:else}
   <div class="mask" onclick={onClose}></div>
