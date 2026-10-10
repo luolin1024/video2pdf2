@@ -143,3 +143,26 @@ def load_llm_config(api_base=None, api_key=None, model=None) -> LLMConfig | None
         model=(model or os.getenv("CHALKPRESS_LLM_MODEL") or os.getenv("V2P2_LLM_MODEL") or file_cfg.get("model") or "").strip(),
     )
     return cfg if (cfg.api_base and cfg.api_key and cfg.model) else None
+
+
+def normalize_settings(raw: dict) -> dict:
+    """前端提交的散装配置 → 规范 config.toml 结构（原 GUI _save_settings 逻辑）。"""
+    o = raw.get("options", {})
+    app = raw.get("app", {})
+    llm = raw.get("llm", {})
+    options = {
+        "summary_lang": o.get("summary_lang", "zh"),
+        "zh_script": o.get("zh_script", "auto"),
+        "auto_correct": bool(o.get("auto_correct", True)),
+    }
+    for k in ("asr_model", "scene_threshold", "min_gap"):
+        if o.get(k) is not None:
+            options[k] = o[k]
+    cfg: dict = {"options": options,
+                 "app": {"keep_log": bool(app.get("keep_log", True))}}
+    base = (llm.get("api_base") or "").strip()
+    key = (llm.get("api_key") or "").strip()
+    model = (llm.get("model") or "").strip()
+    if base and key and model:
+        cfg["llm"] = {"api_base": base, "api_key": key, "model": model}
+    return cfg
