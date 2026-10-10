@@ -23,13 +23,11 @@
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| Windows | `chalkpress-windows-x64-setup.exe` | 安装向导（简中），per-user 安装无需管理员 |
-| Windows | `chalkpress-windows-x64.zip` | 绿色版，解压即用 |
-| macOS (Apple Silicon) | `chalkpress-macos-arm64.dmg` | 打开拖入 Applications |
-| macOS (Apple Silicon) | `chalkpress-macos-arm64.zip` | 绿色版 |
-| Linux x64 | `chalkpress-linux-x64.tar.gz` | 解压运行 `chalkpress` |
+| Windows | `chalkpress_*_x64-setup.exe` | NSIS 安装向导（简中），per-user 安装无需管理员 |
+| macOS (Apple Silicon) | `chalkpress_*_aarch64.dmg` | 打开拖入 Applications |
+| Linux x64 | `chalkpress_*_amd64.AppImage` | 赋予执行权限后直接运行 |
 
-应用内置"检查更新"（设置 → 关于与更新），自动从 GitHub Releases 拉取新版本。
+应用内置自动更新（设置 → 关于与更新），自动从 GitHub Releases 拉取新版本并安装。
 
 ## 快速上手
 
@@ -75,29 +73,29 @@ export CHALKPRESS_LLM_MODEL="glm-4.6v"                              # 需支持�
 
 也可在 GUI 设置页填写（改动即存，持久生效）。旧 `V2P2_*` 环境变量仍兼容。
 
+## 桌面应用（Tauri 2）
+
+GUI 为 Tauri 2 桌面应用：**零配置首页**（拖入视频即可转换）+ **设置中心**（每项带一句话解释，改动 400ms 防抖后持久化）+ **应用内自动更新**（从 GitHub Releases 检查并安装新版本）。Python 流水线以 PyInstaller sidecar 形式内嵌，转换逻辑与 CLI 完全同源。
+
 ## 从源码运行 / 构建
 
 ```bash
 # 运行（Python ≥ 3.9）
 uv pip install -e .
-chalkpress-gui            # GUI
 chalkpress 视频.mp4        # CLI
 
-# 打包（需先落地 whisper 模型）
-python -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-small', local_dir='build/model')"
-pyinstaller --noconfirm --windowed --name chalkpress \
-  --collect-all faster_whisper --collect-all ctranslate2 \
-  --collect-all imageio_ffmpeg --collect-all onnxruntime \
-  --collect-all tokenizers --collect-all av \
-  --add-data "build/model$( [ "$(uname)" = Darwin ] && echo : || echo \; )models/faster-whisper-small" \
-  run_gui.py
+# 构建 GUI（先打 sidecar，再打桌面应用）
+corepack pnpm i
+python packaging/build_sidecar.py
+corepack pnpm tauri build
 ```
 
-CI（`.github/workflows/build-binaries.yml`）在推送 main / 打 `v*` tag 时自动三平台打包并发布到 Releases。
+CI（`.github/workflows/build-binaries.yml`）在推送 main / 打 `v*` tag 时自动三平台构建 sidecar 与 Tauri 应用，并发布安装包到 Releases。
 
 ## 技术要点
 
 - **流水线**：`Options → run()/run_batch()`，五段处理链，单个视频失败不中断批量
+- **桌面 GUI**：Tauri 2（零配置首页 + 设置中心 + 应用内自动更新），Python 流水线作为 PyInstaller sidecar 内嵌
 - **本地 ASR**：faster-whisper（CPU int8，全平台）；macOS 可选 mlx-whisper 加速；whisper 支持 90+ 语种
 - **简繁规范**：OpenCC 确定性转换；`auto` 按系统 locale 判定
 - **可检索 PDF**：reportlab 生成，帧为图、字幕/总结为真实文本层；CJK 字体解析链三平台不缺字

@@ -22,7 +22,6 @@ mac = ["mlx-whisper>=0.5"]
 
 [project.scripts]
 chalkpress = "chalkpress.cli:main"
-chalkpress-gui = "chalkpress.gui:main"
 
 [tool.setuptools]
 packages = ["chalkpress"]

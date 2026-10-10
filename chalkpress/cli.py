@@ -1,4 +1,4 @@
-"""命令行入口。不带参数或想用图形界面请用 chalkpress-gui（同一核心流水线）。"""
+"""命令行入口。桌面 GUI 与自动更新见 GitHub Releases（Tauri 版）。"""
 from __future__ import annotations
 
 import argparse
