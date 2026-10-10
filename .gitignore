@@ -5,3 +5,5 @@ build/
 dist/
 output/
 .superpowers/
+node_modules/
+src-tauri/binaries/

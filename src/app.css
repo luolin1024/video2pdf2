@@ -1,0 +1,18 @@
+/* src/app.css —— 设计令牌，全项目共用 */
+:root {
+  --accent: #4f5bd5;
+  --accent-dk: #4348b8;
+  --accent-bg: #edefff;
+  --bg: #f5f6fa;
+  --card: #ffffff;
+  --ink: #1d1d1f;
+  --ink2: #6e6e73;
+  --faint: #a6a6ad;
+  --line: #e2e4ee;
+  --red: #c4453c;
+  --radius: 12px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+       font: 14px/1.5 -apple-system, "Segoe UI", "PingFang SC",
+             "Microsoft YaHei UI", sans-serif; }
