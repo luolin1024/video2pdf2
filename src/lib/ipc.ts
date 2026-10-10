@@ -33,6 +33,7 @@ export async function startCore(): Promise<void> {
     pending.forEach((p) => p.reject(new Error("core 已退出")));
     pending.clear();
     exitHandlers.forEach((h) => h());
+    cmd = null; child = null;  // 允许下次 startCore() 重试
   });
   try {
     child = await c.spawn();

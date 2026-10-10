@@ -19,6 +19,9 @@
     {#if app.outdir}
       <button class="primary" onclick={() => openPath(app.outdir!)}>打开输出文件夹</button>
     {/if}
+    <button class="ghost" onclick={() => { app.phase = "idle"; app.results = []; app.outdir = null; }}>
+      继续转换新的视频
+    </button>
   </div>
 </section>
 
@@ -33,4 +36,6 @@
   .meta { color: var(--ink2); font-size: 12px; float: right; }
   .primary { margin-top: 14px; background: var(--accent); color: #fff; border: 0;
              border-radius: 10px; padding: 10px 22px; font-weight: 600; cursor: pointer; }
+  .ghost { margin-top: 8px; background: var(--card); color: var(--ink); border: 1px solid var(--line);
+           border-radius: 10px; padding: 9px 22px; font-weight: 500; cursor: pointer; }
 </style>

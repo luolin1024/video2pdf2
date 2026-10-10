@@ -2,7 +2,7 @@
 """构建 Tauri sidecar：PyInstaller 打包 chalkpress.ipc，输出到 src-tauri/binaries/。
 
 用法：python packaging/build_sidecar.py [--dev]
---dev 额外产出无 target-triple 后缀的副本（调试用）。
+--dev 模式以 chalkpress-core-dev 命名输出（开发用）；默认输出 chalkpress-core-<target-triple> 供 Tauri externalBin 使用。
 """
 import argparse
 import subprocess

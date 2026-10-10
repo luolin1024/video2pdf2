@@ -19,15 +19,15 @@
 
 ## 下载安装
 
-从 [GitHub Releases](https://github.com/luolin1024/video2pdf2/releases) 下载：
+从 [GitHub Releases](https://github.com/luolin1024/chalkpress/releases) 下载：
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| Windows | `chalkpress_*_x64-setup.exe` | NSIS 安装向导（简中），per-user 安装无需管理员 |
-| macOS (Apple Silicon) | `chalkpress_*_aarch64.dmg` | 打开拖入 Applications |
-| Linux x64 | `chalkpress_*_amd64.AppImage` | 赋予执行权限后直接运行 |
+| Windows | `Chalkpress_*_x64-setup.exe` | NSIS 安装向导（简中），per-user 安装无需管理员 |
+| macOS (Apple Silicon) | `Chalkpress_*_aarch64.dmg` | 打开拖入 Applications |
+| Linux x64 | `Chalkpress_*_amd64.AppImage` | 赋予执行权限后直接运行 |
 
-应用内置自动更新（设置 → 关于与更新），自动从 GitHub Releases 拉取新版本并安装。
+应用内置自动更新，更新自动进行（应用内静默更新）。
 
 ## 快速上手
 

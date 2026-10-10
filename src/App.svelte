@@ -32,7 +32,7 @@
   }
 
   async function start() {
-    if (!app.videos.length) return;
+    if (app.phase === "running" || !app.videos.length) return;
     resetRun();
     app.phase = "running";
     for (const [k] of STAGES) app.run.stages[k] = "todo";
@@ -53,11 +53,22 @@
     (async () => {
       try { await startCore(); } catch { coreDown = true; }
       const VIDEO_EXTS = /\.(mp4|mov|mkv|webm|avi|m4v|flv|ts)$/i;
+      const onDrop = async (paths: string[]) => {
+        for (const path of paths) {
+          if (VIDEO_EXTS.test(path)) {
+            addVideo(path);
+          } else if (!/\.[^./\\]+$/.test(path)) {
+            // 无扩展名 = 目录：让后端递归展开
+            try {
+              const { videos } = await request<{ videos: string[] }>("fs.list_videos", { dir: path });
+              for (const v of videos) addVideo(v);
+            } catch { /* 非目录或读取失败，忽略 */ }
+          }
+        }
+      };
       unDrag = await getCurrentWebview().onDragDropEvent((ev: any) => {
         const p = ev.payload;
-        if (p.type === "drop") {
-          for (const path of p.paths) if (VIDEO_EXTS.test(path)) addVideo(path);
-        }
+        if (p.type === "drop") void onDrop(p.paths);
       });
     })();
     onEvent((ev) => {
@@ -95,7 +106,9 @@
 </script>
 
 {#if coreDown}
-  <div class="corebar">转换引擎未启动，请重启应用；若持续出现请重新安装。</div>
+  <div class="corebar">转换引擎未启动，请重启应用；若持续出现请重新安装。
+    <button class="retry" onclick={() => { coreDown = false; startCore().catch(() => (coreDown = true)); }}>重试</button>
+  </div>
 {/if}
 
 <main class="wrap">
@@ -176,5 +189,7 @@
            padding: 8px 18px; cursor: pointer; }
   .err { color: var(--red); }
   .corebar { background: var(--red); color: #fff; text-align: center; padding: 6px; font-size: 13px; }
+  .retry { margin-left: 10px; background: #fff; color: var(--red); border: 1px solid #fff;
+           border-radius: 6px; padding: 1px 12px; font-size: 12px; cursor: pointer; }
   .errbar { background: var(--red); color: #fff; text-align: center; padding: 6px; font-size: 13px; border-radius: 8px; margin-top: 10px; }
 </style>
