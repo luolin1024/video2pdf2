@@ -59,6 +59,10 @@ jobs:
           PY=.venv/bin/python; [ -f .venv/Scripts/python.exe ] && PY=.venv/Scripts/python.exe
           "$PY" packaging/build_sidecar.py
 
+      - name: Install Tauri dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -76,7 +80,7 @@ jobs:
           mkdir -p dist
           find src-tauri/target/release/bundle -type f \
             \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \
-               -o -name "*.sig" -o -name "latest.json" \) -exec cp {} dist/ \;
+               -o -name "*.sig" -o -name "*.app.tar.gz" \) -exec cp {} dist/ \;
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
