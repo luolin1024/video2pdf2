@@ -59,6 +59,14 @@ def test_serve_skips_non_json_lines():
     assert len(msgs) == 1 and "error" in msgs[0]
 
 
+def test_fs_list_videos(tmp_path):
+    (tmp_path / "a.mp4").write_bytes(b"x")
+    (tmp_path / "b.txt").write_text("x")
+    s = make_server()
+    resp = s.handle({"id": 1, "method": "fs.list_videos", "params": {"dir": str(tmp_path)}})
+    assert resp["result"]["videos"] == [str(tmp_path / "a.mp4")]
+
+
 def test_sanitize_progress_result_to_dict():
     """Result 数据类不可 JSON 序列化，必须展平为标量字段。"""
     class FakeResult:

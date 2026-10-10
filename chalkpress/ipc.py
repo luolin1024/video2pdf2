@@ -75,6 +75,11 @@ class IPCServer:
         if method == "convert.cancel":
             self.cancel.set()
             return {}
+        if method == "fs.list_videos":
+            d = Path(params["dir"]).expanduser()
+            return {"videos": sorted(str(p) for p in d.iterdir()
+                                     if p.suffix.lower() in {".mp4", ".mov", ".mkv", ".webm",
+                                                             ".avi", ".m4v", ".flv", ".ts"})}
         raise KeyError(f"unknown method: {method}")
 
     # ---------- 转换 ----------
