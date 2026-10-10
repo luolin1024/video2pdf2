@@ -2,6 +2,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { open } from "@tauri-apps/plugin-dialog";
+  import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { request, startCore, onEvent, onCoreExit } from "./lib/ipc";
   import { app, resetRun, STAGES, computePct } from "./lib/state.svelte";
   import RunPanel from "./components/RunPanel.svelte";
@@ -44,14 +45,24 @@
   }
   async function stop() { await request("convert.cancel"); }
 
-  onMount(async () => {
-    try { await startCore(); } catch { coreDown = true; }
+  onMount(() => {
+    let unDrag: (() => void) | null = null;
+    (async () => {
+      try { await startCore(); } catch { coreDown = true; }
+      const VIDEO_EXTS = /\.(mp4|mov|mkv|webm|avi|m4v|flv|ts)$/i;
+      unDrag = await getCurrentWebview().onDragDropEvent((ev: any) => {
+        const p = ev.payload;
+        if (p.type === "drop") {
+          for (const path of p.paths) if (VIDEO_EXTS.test(path)) addVideo(path);
+        }
+      });
+    })();
     onEvent((ev) => {
       switch (ev.event) {
         case "video_start":
           app.run.index = ev.index; app.run.total = ev.total; app.run.name = ev.name;
           for (const [k] of STAGES) app.run.stages[k] = "todo";
-          app.run.pages = 0;
+          app.run.pages = 0; app.run.pct = 0; app.err = "";
           break;
         case "stage":
           app.run.stages[ev.key] = "doing";
@@ -72,7 +83,11 @@
         case "batch_done": app.phase = "done"; break;
       }
     });
-    onCoreExit(() => { coreDown = true; });
+    onCoreExit(() => {
+      coreDown = true;
+      if (app.phase === "running") { app.phase = "error"; app.err = "转换引擎已退出"; }
+    });
+    return () => unDrag?.();  // 卸载时解绑拖拽监听
   });
 </script>
 
@@ -85,6 +100,10 @@
     <div class="brand"><span class="logo"></span> Chalkpress</div>
     <button class="gear" title="设置" onclick={() => (settingsOpen = true)}>⚙</button>
   </header>
+
+  {#if app.err && !coreDown}
+    <div class="errbar">✗ {app.err}</div>
+  {/if}
 
   {#if app.phase === "idle"}
     <section class="hero">
@@ -150,4 +169,5 @@
            padding: 8px 18px; cursor: pointer; }
   .err { color: var(--red); }
   .corebar { background: var(--red); color: #fff; text-align: center; padding: 6px; font-size: 13px; }
+  .errbar { background: var(--red); color: #fff; text-align: center; padding: 6px; font-size: 13px; border-radius: 8px; margin-top: 10px; }
 </style>
