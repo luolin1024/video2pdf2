@@ -79,16 +79,16 @@ jobs:
       - name: Collect artifacts
         shell: bash
         run: |
-          mkdir -p dist
+          mkdir -p bundle-out
           find src-tauri/target/release/bundle -type f \
             \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \
-               -o -name "*.sig" -o -name "*.app.tar.gz" \) -exec cp {} dist/ \;
+               -o -name "*.sig" -o -name "*.app.tar.gz" \) -exec cp {} bundle-out/ \;
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/*
+          path: bundle-out/*
           if-no-files-found: error
 
   release:
