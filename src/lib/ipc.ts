@@ -4,6 +4,7 @@ import { Command } from "@tauri-apps/plugin-shell";
 type Pending = { resolve: (v: any) => void; reject: (e: Error) => void };
 
 let cmd: Command<any> | null = null;
+let child: any = null;
 let seq = 0;
 const pending = new Map<number, Pending>();
 const eventHandlers = new Set<(ev: any) => void>();
@@ -11,8 +12,8 @@ const exitHandlers = new Set<() => void>();
 
 export async function startCore(): Promise<void> {
   if (cmd) return;
-  cmd = Command.sidecar("binaries/chalkpress-core");
-  cmd.stdout.on("data", (line: string) => {
+  const c = Command.sidecar("binaries/chalkpress-core");
+  c.stdout.on("data", (line: string) => {
     for (const l of line.split("\n")) {
       const t = l.trim();
       if (!t) continue;
@@ -27,21 +28,31 @@ export async function startCore(): Promise<void> {
       }
     }
   });
-  cmd.stderr.on("data", (l: string) => console.error("[core]", l));
-  cmd.on("close", () => {
+  c.stderr.on("data", (l: string) => console.error("[core]", l));
+  c.on("close", () => {
     pending.forEach((p) => p.reject(new Error("core 已退出")));
     pending.clear();
     exitHandlers.forEach((h) => h());
   });
-  await cmd.spawn();
+  try {
+    child = await c.spawn();
+    cmd = c;
+  } catch (e) {
+    cmd = null; child = null; throw e;
+  }
 }
 
 export function request<T = any>(method: string, params?: object): Promise<T> {
-  if (!cmd) return Promise.reject(new Error("core 未启动"));
+  if (!cmd || !child) return Promise.reject(new Error("core 未启动"));
   const id = ++seq;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
-    cmd!.write(JSON.stringify({ id, method, params: params ?? {} }) + "\n");
+    try {
+      child.write(JSON.stringify({ id, method, params: params ?? {} }) + "\n");
+    } catch (e: any) {
+      pending.delete(id);
+      reject(e instanceof Error ? e : new Error(String(e)));
+    }
   });
 }
 
