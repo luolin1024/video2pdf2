@@ -155,7 +155,7 @@ class IPCServer:
             try:
                 req = json.loads(line)
             except json.JSONDecodeError:
-                log.warning("丢弃非 JSON 行: %.80s", line)  # 第三方库污染 stdout 时兜底
+                log.warning("丢弃非 JSON 行: %.80s", line)  # stdin 非 JSON 行容错；stdout 污染由 main() 的 sys.stdout 重定向防护
                 continue
             self.send(self.handle(req))
 
@@ -165,9 +165,11 @@ def main():
                         format="%(asctime)s %(name)s %(message)s")
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(line_buffering=True)
+    protocol_out = sys.stdout   # 协议通道固定为真实 stdout
+    sys.stdout = sys.stderr     # 第三方 Python 级 print() → stderr
     if hasattr(sys.stderr, "reconfigure"):
         sys.stderr.reconfigure(line_buffering=True)
-    IPCServer().serve()
+    IPCServer(stdout=protocol_out).serve()
 
 
 if __name__ == "__main__":
