@@ -17,92 +17,72 @@ jobs:
         include:
           - os: macos-15
             artifact: chalkpress-macos-arm64
-            sep: ":"
-            py: .venv/bin/python
-            archive: zip
           - os: windows-latest
             artifact: chalkpress-windows-x64
-            sep: ";"
-            py: .venv/Scripts/python.exe
-            archive: zip
           - os: ubuntu-22.04
             artifact: chalkpress-linux-x64
-            sep: ":"
-            py: .venv/bin/python
-            archive: tar
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with: { version: 9 }
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with: { workspaces: src-tauri }
+
       - name: Install uv
         uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.13"
+        with: { python-version: "3.13" }
 
-      - name: Install dependencies
+      - name: Install Python deps
         shell: bash
         run: |
           unset VIRTUAL_ENV
           uv venv .venv --python 3.13 --allow-existing
-          uv pip install -e . pyinstaller --python "${{ matrix.py }}"
+          uv pip install -e . pyinstaller huggingface_hub --python .venv/bin/python || \
+          uv pip install -e . pyinstaller huggingface_hub --python .venv/Scripts/python.exe
 
-      - name: Materialize whisper-small model
+      - name: Build sidecar
         shell: bash
         run: |
-          uv pip install huggingface_hub --python "${{ matrix.py }}"
-          "${{ matrix.py }}" -c "from huggingface_hub import snapshot_download; snapshot_download('Systran/faster-whisper-small', local_dir='build/model')"
+          PY=.venv/bin/python; [ -f .venv/Scripts/python.exe ] && PY=.venv/Scripts/python.exe
+          "$PY" packaging/build_sidecar.py
 
-      - name: Build with PyInstaller
-        shell: bash
-        run: >
-          "${{ matrix.py }}" -m PyInstaller --noconfirm --windowed --name chalkpress
-          --collect-all faster_whisper --collect-all ctranslate2
-          --collect-all imageio_ffmpeg --collect-all onnxruntime
-          --collect-all tokenizers --collect-all av
-          --add-data "build/model${{ matrix.sep }}models/faster-whisper-small"
-          run_gui.py
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          # tag 推送才创建/上传 Release；main 推送只构建不出版
+          tagName: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
 
-      - name: Archive (zip)
-        if: matrix.archive == 'zip'
-        shell: bash
-        run: |
-          cd dist
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            powershell -Command "Compress-Archive -Path chalkpress -DestinationPath ${{ matrix.artifact }}.zip -Force"
-          else
-            find . -maxdepth 1 \( -name "chalkpress.app" -o -name "chalkpress" \) | xargs zip -qry ${{ matrix.artifact }}.zip
-          fi
-
-      - name: Archive (tar.gz)
-        if: matrix.archive == 'tar'
+      - name: Collect artifacts
         shell: bash
         run: |
-          cd dist
-          tar czf ${{ matrix.artifact }}.tar.gz chalkpress
-
-      - name: Create dmg
-        if: runner.os == 'macOS'
-        run: |
-          hdiutil create -volname chalkpress -srcfolder dist/chalkpress.app -ov -format UDZO dist/${{ matrix.artifact }}.dmg
-
-      - name: Build installer (Inno Setup)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          VERSION=$("${{ matrix.py }}" -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
-          echo "AppVersion=$VERSION"
-          MSYS_NO_PATHCONV=1 "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" /DAppVersion="$VERSION" packaging/chalkpress.iss
+          mkdir -p dist
+          find src-tauri/target/release/bundle -type f \
+            \( -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \
+               -o -name "*.sig" -o -name "latest.json" \) -exec cp {} dist/ \;
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: |
-            dist/*.zip
-            dist/*.tar.gz
-            dist/*.exe
-            dist/*.dmg
+          path: dist/*
           if-no-files-found: error
 
   release:
