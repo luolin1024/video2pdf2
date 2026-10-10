@@ -65,7 +65,8 @@ class IPCServer:
             return {"options": cfg.get("options", {}),
                     "app": cfg.get("app", {}),
                     "llm": cfg.get("llm", {}),
-                    "llm_configured": load_llm_config() is not None}
+                    "llm_configured": load_llm_config() is not None,
+                    "logs_dir": str(logs_dir())}
         if method == "settings.set":
             save_config_file(normalize_settings(params))
             return {}

@@ -7,6 +7,7 @@
   import { app, resetRun, STAGES, computePct } from "./lib/state.svelte";
   import RunPanel from "./components/RunPanel.svelte";
   import ResultsCard from "./components/ResultsCard.svelte";
+  import SettingsSheet from "./components/SettingsSheet.svelte";
 
   let settingsOpen = false;
   let coreDown = false;
@@ -139,6 +140,10 @@
     </section>
   {/if}
 </main>
+
+{#if settingsOpen}
+  <SettingsSheet onClose={() => (settingsOpen = false)} />
+{/if}
 
 <style>
   .wrap { max-width: 760px; margin: 0 auto; padding: 16px 24px 32px; }
